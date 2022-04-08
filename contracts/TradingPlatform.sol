@@ -9,11 +9,9 @@ error AlreadyRegistered();
 error IncorrectAddress();
 error IncorrectAmount();
 error RoundNotProgress();
-error RoundInProgress();
 error RoundNotSale();
 error RoundNotTrade();
 error NoSupply();
-error NotEnoughFunds();
 
 contract TradingPlatform is ReentrancyGuard {
     enum Status {
@@ -68,7 +66,7 @@ contract TradingPlatform is ReentrancyGuard {
         round.startTime = block.timestamp;
         round.endTime = round.startTime + ROUND_DURATION;
         round.supply = _supply;
-        round.tokenPrice = 1e4;
+        round.tokenPrice = 1e18 / _supply;
     }
 
     modifier onlyRegistered() {
@@ -107,15 +105,14 @@ contract TradingPlatform is ReentrancyGuard {
         if (round.roundType != Type.SALE) revert RoundNotSale();
         User memory user = users[msg.sender];
         uint256 tokenAmount = msg.value / round.tokenPrice;
+        if (tokenAmount <= 0) revert IncorrectAmount();
         if (round.supply < tokenAmount) revert NoSupply();
         if (user.refers.length > 0)
-            _withdrawEth(
-                user.refers[0],
+            payable(user.refers[0]).transfer(
                 (msg.value * FIRST_REFERRAL_PERCENTAGE) / 100
             );
         if (user.refers.length == 2)
-            _withdrawEth(
-                user.refers[1],
+            payable(user.refers[1]).transfer(
                 (msg.value * SECOND_REFERRAL_PERCENTAGE) / 100
             );
         round.supply -= tokenAmount;
@@ -133,7 +130,7 @@ contract TradingPlatform is ReentrancyGuard {
         if (round.status != Status.PROGRESS || block.timestamp > round.endTime)
             revert RoundNotProgress();
         if (round.roundType != Type.TRADE) revert RoundNotTrade();
-        if (_amount > balance) revert NotEnoughFunds();
+        if (_amount > balance) revert IncorrectAmount();
         ITokenForTrading(token).transferFrom(
             msg.sender,
             address(this),
@@ -164,20 +161,18 @@ contract TradingPlatform is ReentrancyGuard {
         uint256 tokenAmount = (tokenBuy * round.orders[_orderId].amount) / 100;
         if (msg.value > round.orders[_orderId].price) revert IncorrectAmount();
         if (user.refers.length > 0)
-            _withdrawEth(
-                user.refers[0],
+            payable(user.refers[0]).transfer(
                 (msg.value * FIRST_REFERRAL_PERCENTAGE) / 100
             );
         if (user.refers.length == 2)
-            _withdrawEth(
-                user.refers[1],
+            payable(user.refers[1]).transfer(
                 (msg.value * SECOND_REFERRAL_PERCENTAGE) / 100
             );
         round.ethAmount += msg.value;
         round.orders[_orderId].amount -= tokenAmount;
         round.orders[_orderId].price -= msg.value;
         ITokenForTrading(token).transfer(msg.sender, tokenAmount);
-        _withdrawEth(round.orders[_orderId].owner, msg.value);
+        payable(round.orders[_orderId].owner).transfer(msg.value);
     }
 
     function finishOrder(uint256 _orderId) external onlyRegistered {
@@ -214,7 +209,7 @@ contract TradingPlatform is ReentrancyGuard {
         round.roundType = Type.SALE;
         round.startTime = block.timestamp;
         round.endTime = round.startTime + ROUND_DURATION;
-        round.supply = ethAmount * tokenPrice;
+        round.supply = ethAmount / tokenPrice;
         round.tokenPrice = _tokenPrice(tokenPrice);
         ITokenForTrading(token).mint(address(this), round.supply);
     }
@@ -242,10 +237,6 @@ contract TradingPlatform is ReentrancyGuard {
     }
 
     function _tokenPrice(uint256 _lastPrice) private pure returns (uint256) {
-        return (_lastPrice / 1e2) * 103 + 4e3;
-    }
-
-    function _withdrawEth(address _to, uint256 _amount) private {
-        _to.call{value: _amount}("");
+        return (_lastPrice / 1e2) * 103 + 4e12;
     }
 }

@@ -7,9 +7,10 @@ import tradeRound from "./tradeRound";
 export default describe("Trading platform testing", async function () {
   before(async function () {
     [this.owner, this.acc1, this.acc2, this.acc3] = await ethers.getSigners();
-    this.supply = 1e10;
-    this.testAmount = 1e12;
-    this.bigTestAmount = 1e14;
+    this.supply = 1e5;
+    this.testAmount = 1e18;
+    this.minTestAmount = 1e17;
+    this.errorAmount = 1e12;
   });
   beforeEach(async function () {
     const artifactToken: Artifact = await artifacts.readArtifact(

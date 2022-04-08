@@ -20,13 +20,17 @@ export default (): void => {
 
     const buy = await this.instance
       .connect(this.acc3)
-      .buyTokens({ value: this.testAmount });
+      .buyTokens({ value: BigInt(this.testAmount) });
 
     await buy.wait();
 
     await expect(() => buy).to.changeEtherBalances(
       [this.acc3, this.acc2, this.acc1],
-      [-this.testAmount, firstAmountRef, secondAmountRef]
+      [
+        BigInt(-this.testAmount),
+        BigInt(firstAmountRef),
+        BigInt(secondAmountRef),
+      ]
     );
 
     const balance = await this.instanceToken.balanceOf(this.acc3.address);
@@ -38,30 +42,39 @@ export default (): void => {
     await ethers.provider.send("evm_increaseTime", [600000]);
 
     await expect(
-      this.instance.connect(this.acc1).buyTokens({ value: this.testAmount })
+      this.instance
+        .connect(this.acc1)
+        .buyTokens({ value: BigInt(this.testAmount) })
     ).to.be.revertedWith("RoundNotProgress()");
   });
   it("SALE-ROUND: Expected custom error RoundNotSale", async function (): Promise<void> {
     await this.instance.connect(this.acc1)["registation()"]();
     await this.instance
       .connect(this.acc1)
-      .buyTokens({ value: this.bigTestAmount });
+      .buyTokens({ value: BigInt(this.testAmount) });
+
     await expect(
-      this.instance.connect(this.acc1).buyTokens({ value: this.bigTestAmount })
+      this.instance
+        .connect(this.acc1)
+        .buyTokens({ value: BigInt(this.testAmount) })
     ).to.be.revertedWith("RoundNotSale()");
   });
   it("SALE-ROUND: Expected custom error NoSupply", async function (): Promise<void> {
     await this.instance.connect(this.acc1)["registation()"]();
     await this.instance
       .connect(this.acc1)
-      .buyTokens({ value: this.testAmount });
+      .buyTokens({ value: BigInt(this.minTestAmount) });
     await expect(
-      this.instance.connect(this.acc1).buyTokens({ value: this.bigTestAmount })
+      this.instance
+        .connect(this.acc1)
+        .buyTokens({ value: BigInt(this.testAmount) })
     ).to.be.revertedWith("NoSupply()");
   });
   it("SALE-ROUND: Expected error onlyRegistered", async function (): Promise<void> {
     await expect(
-      this.instance.connect(this.acc1).buyTokens({ value: this.bigTestAmount })
+      this.instance
+        .connect(this.acc1)
+        .buyTokens({ value: BigInt(this.testAmount) })
     ).to.be.revertedWith("Only registered");
   });
   it("SALE-ROUND: Tokens are expected to burn at the end of the round", async function (): Promise<void> {
@@ -69,12 +82,19 @@ export default (): void => {
 
     await this.instance
       .connect(this.acc1)
-      .buyTokens({ value: this.testAmount });
+      .buyTokens({ value: BigInt(this.testAmount) });
     await ethers.provider.send("evm_increaseTime", [600000]);
     await this.instance.connect(this.acc1).nextRound();
 
     const balance = await this.instanceToken.balanceOf(this.instance.address);
 
     expect(balance).to.eq(0);
+  });
+  it("SALE-ROUND: Expected custom error NoSupply", async function (): Promise<void> {
+    await this.instance.connect(this.acc1)["registation()"]();
+
+    await expect(
+      this.instance.connect(this.acc1).buyTokens({ value: this.errorAmount })
+    ).to.be.revertedWith("IncorrectAmount()");
   });
 };
