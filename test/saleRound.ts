@@ -82,7 +82,7 @@ export default (): void => {
 
     await this.instance
       .connect(this.acc1)
-      .buyTokens({ value: BigInt(this.testAmount) });
+      .buyTokens({ value: BigInt(this.minTestAmount) });
     await ethers.provider.send("evm_increaseTime", [600000]);
     await this.instance.connect(this.acc1).nextRound();
 

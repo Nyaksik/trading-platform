@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../interface/ITokenForTrading.sol";
-import "hardhat/console.sol";
 
 error AlreadyRegistered();
 error IncorrectAddress();
@@ -175,7 +174,7 @@ contract TradingPlatform is ReentrancyGuard {
         payable(round.orders[_orderId].owner).transfer(msg.value);
     }
 
-    function finishOrder(uint256 _orderId) external onlyRegistered {
+    function finishOrder(uint256 _orderId) external {
         Round storage round = rounds[roundId];
         if (msg.sender != round.orders[_orderId].owner)
             revert IncorrectAddress();
@@ -187,7 +186,7 @@ contract TradingPlatform is ReentrancyGuard {
             );
     }
 
-    function nextRound() public onlyRegistered {
+    function nextRound() public {
         Round storage round = rounds[roundId];
         require(
             block.timestamp >= round.endTime ||
@@ -237,6 +236,6 @@ contract TradingPlatform is ReentrancyGuard {
     }
 
     function _tokenPrice(uint256 _lastPrice) private pure returns (uint256) {
-        return (_lastPrice / 1e2) * 103 + 4e12;
+        return (_lastPrice / 1e7) * 103 + 4e12;
     }
 }
