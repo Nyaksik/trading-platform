@@ -21,7 +21,7 @@ task("buy", "Buying tokens in the sale round")
       process.env.PLATFORM_ADDRESS as string
     );
 
-    await platform.buyTokens(eth);
+    await platform.buyTokens({ value: eth });
 
     console.log(`You bought tokens for ${eth}`);
   });
@@ -42,13 +42,14 @@ task("create", "Create order")
 
 task("buyOrder", "Purchase order")
   .addParam("id", "Order ID")
-  .setAction(async ({ id }, { ethers }) => {
+  .addParam("eth", "Ethereum amount")
+  .setAction(async ({ id, eth }, { ethers }) => {
     const platform = await ethers.getContractAt(
       "TradingPlatform",
       process.env.PLATFORM_ADDRESS as string
     );
 
-    await platform.buyOrder(id);
+    await platform.buyOrder(id, { value: eth });
 
     console.log(`Order with id ${id} purchased`);
   });
